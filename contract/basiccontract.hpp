@@ -12,37 +12,40 @@
 
 namespace eosiosystem
 {
-class system_contract;
+    class system_contract;
 }
 
 namespace eosio
 {
-using std::string;
+    using std::string;
 
-class[[eosio::contract("BasicToken")]] BasicToken : public contract
-{
-public:
-    using contract::contract;
+    CONTRACT BasicToken : public contract
+    {
+    public:
+        using contract::contract;
 
-    /**
-    * Create action.
+        // Rename symbols before compile
+        static constexpr name CORE_SYM_ACCOUNT = "eosio.token"_n;
+        static constexpr symbol CORE_SYM = symbol("TLOS", 4);
+        static constexpr symbol WRAP_SYM = symbol("TLOSW", 4);
+
+        /**
+    * Create action, will only create the WRAP_SYM.
     *
     * @details Allows `issuer` account to create a token in supply of `maximum_supply`.
     * @param issuer - the account that creates the token,
     * @param maximum_supply - the maximum supply set for the token created.
     *
-    * @pre Token symbol has to be valid,
-    * @pre Token symbol must not be already created,
     * @pre maximum_supply has to be smaller than the maximum supply allowed by the system: 1^62 - 1.
     * @pre Maximum supply must be positive;
     *
     * If validation is successful a new entry in statstable for token symbol scope gets created.
     */
-    [[eosio::action]] void create(name issuer,
-                                  asset maximum_supply);
+        ACTION create(name issuer,
+                      asset maximum_supply);
 
-    /**
-    * Issue action.
+        /**
+    * Issue action
     *
     * @details This action issues to `to` account a `quantity` of tokens.
     *
@@ -50,20 +53,30 @@ public:
     * @param quntity - the amount of tokens to be issued,
     * @memo - the memo string that accompanies the token issue transaction.
     */
-    [[eosio::action]] void issue(name to, asset quantity, string memo);
+        ACTION issue(name to, asset quantity, string memo);
 
-    /**
-    * Retire action.
+        /**
+    * Retire action
     *
-    * @details The opposite for create action, if all validations succeed,
+    * @details The opposite for issue function, if all validations succeed,
     * it debits the statstable.supply amount.
     *
     * @param quantity - the quantity of tokens to retire,
     * @param memo - the memo string to accompany the transaction.
     */
-    [[eosio::action]] void retire(asset quantity, string memo);
+        ACTION retire(asset quantity, string memo);
 
-    /**
+        /**
+    * Unwrap action
+    *
+    * @details Unwraps the core token, burns the wrapped and returns the core to the user
+    *
+    * @param from - the account who's tokens shall be unwrapped,
+    * @param quantity - the the amount to unwrap.
+    */
+        ACTION unwrap(name from, asset quantity);
+
+        /**
     * Transfer action.
     *
     * @details Allows `from` account to transfer to `to` account the `quantity` tokens.
@@ -74,12 +87,12 @@ public:
     * @param quantity - the quantity of tokens to be transferred,
     * @param memo - the memo string to accompany the transaction.
     */
-    [[eosio::action]] void transfer(name from,
-                                    name to,
-                                    asset quantity,
-                                    string memo);
+        ACTION transfer(name from,
+                        name to,
+                        asset quantity,
+                        string memo);
 
-    /**
+        /**
     * Transferfrom action.
     *
     * @details Allows `spender` to transfer funds from the `from` account to `to` account.
@@ -91,13 +104,13 @@ public:
     * @param quantity - the quantity of tokens to be transferred,
     * @param memo - the memo string to accompany the transaction.
     */
-    [[eosio::action]] void transferfrom(name from,
-                                        name to,
-                                        name spender,
-                                        asset quantity,
-                                        string memo);
+        ACTION transferfrom(name from,
+                            name to,
+                            name spender,
+                            asset quantity,
+                            string memo);
 
-    /**
+        /**
     * Approve action.
     *
     * @details Allows `owner` to pre-approve `spender` to transfer `quantity` of funds from his account using the transferfrom action.
@@ -108,11 +121,11 @@ public:
     * @param spender - the account of the delegated spender
     * @param quantity - the quantity of tokens pre-approved to be spent,
     */
-    [[eosio::action]] void approve(name owner,
-                                   name spender,
-                                   asset quantity);
+        ACTION approve(name owner,
+                       name spender,
+                       asset quantity);
 
-    /**
+        /**
     * Unapprove action.
     *
     * @details Allows `owner` to remove `quantity` to a prior approval for `spender`. This is incremental. 
@@ -122,11 +135,11 @@ public:
     * @param spender - the account of the delegated spender
     * @param quantity - the quantity of tokens to remove from allowance,
     */
-    [[eosio::action]] void unapprove(name owner,
-                                     name spender,
-                                     asset quantity);
+        ACTION unapprove(name owner,
+                         name spender,
+                         asset quantity);
 
-    /**
+        /**
     * Open action.
     *
     * @details Allows `ram_payer` to create an account `owner` with zero balance for
@@ -139,9 +152,9 @@ public:
     * More information can be read [here](https://github.com/EOSIO/eosio.contracts/issues/62)
     * and [here](https://github.com/EOSIO/eosio.contracts/issues/61).
     */
-    [[eosio::action]] void open(name owner, const symbol &symbol, name ram_payer);
+        ACTION open(name owner, const symbol &symbol, name ram_payer);
 
-    /**
+        /**
     * Close action.
     *
     * @details This action is the opposite for open, it closes the account `owner`
@@ -153,9 +166,9 @@ public:
     * @pre The pair of owner plus symbol has to exist otherwise no action is executed,
     * @pre If the pair of owner plus symbol exists, the balance has to be zero.
     */
-    [[eosio::action]] void close(name owner, const symbol &symbol);
+        ACTION close(name owner, const symbol &symbol);
 
-    /**
+        /**
     * Get supply method.
     *
     * @details Gets the supply for token `sym_code`, created by `token_contract_account` account.
@@ -163,14 +176,14 @@ public:
     * @param token_contract_account - the account to get the supply for,
     * @param sym_code - the symbol to get the supply for.
     */
-    static asset get_supply(name token_contract_account, symbol_code sym_code)
-    {
-        stats statstable(token_contract_account, sym_code.raw());
-        const auto &st = statstable.get(sym_code.raw());
-        return st.supply;
-    }
+        static asset get_supply(name token_contract_account, symbol_code sym_code)
+        {
+            stats statstable(token_contract_account, sym_code.raw());
+            const auto &st = statstable.get(sym_code.raw());
+            return st.supply;
+        }
 
-    /**
+        /**
     * Get max supply method.
     *
     * @details Gets the max supply for token `sym_code`, created by `token_contract_account` account.
@@ -178,14 +191,14 @@ public:
     * @param token_contract_account - the account to get the supply for,
     * @param sym_code - the symbol to get the supply for.
     */
-    static asset get_maxsupply(name token_contract_account, symbol_code sym_code)
-    {
-        stats statstable(token_contract_account, sym_code.raw());
-        const auto &st = statstable.get(sym_code.raw());
-        return st.max_supply;
-    }
+        static asset get_maxsupply(name token_contract_account, symbol_code sym_code)
+        {
+            stats statstable(token_contract_account, sym_code.raw());
+            const auto &st = statstable.get(sym_code.raw());
+            return st.max_supply;
+        }
 
-    /**
+        /**
     * Get balance method.
     *
     * @details Get the balance for a token `sym_code` created by `token_contract_account` account,
@@ -195,56 +208,59 @@ public:
     * @param owner - the account for which the token balance is returned,
     * @param sym_code - the token for which the balance is returned.
     */
-    static asset get_balance(name token_contract_account, name owner, symbol_code sym_code)
-    {
-        accounts accountstable(token_contract_account, owner.value);
-        const auto &ac = accountstable.get(sym_code.raw());
-        return ac.balance;
-    }
+        static asset get_balance(name token_contract_account, name owner, symbol_code sym_code)
+        {
+            accounts accountstable(token_contract_account, owner.value);
+            const auto &ac = accountstable.get(sym_code.raw());
+            return ac.balance;
+        }
 
-    using create_action = eosio::action_wrapper<"create"_n, &BasicToken::create>;
-    using issue_action = eosio::action_wrapper<"issue"_n, &BasicToken::issue>;
-    using retire_action = eosio::action_wrapper<"retire"_n, &BasicToken::retire>;
-    using transfer_action = eosio::action_wrapper<"transfer"_n, &BasicToken::transfer>;
-    using transferfrom_action = eosio::action_wrapper<"transferfrom"_n, &BasicToken::transferfrom>;
-    using approve_action = eosio::action_wrapper<"approve"_n, &BasicToken::approve>;
-    using unapprove_action = eosio::action_wrapper<"unapprove"_n, &BasicToken::unapprove>;
-    using open_action = eosio::action_wrapper<"open"_n, &BasicToken::open>;
-    using close_action = eosio::action_wrapper<"close"_n, &BasicToken::close>;
+        //catches CORE_SYMBOL transfers from eosio.token
+        [[eosio::on_notify("eosio.token::transfer")]] void ontransfer(name from, name to, asset quantity, string memo);
 
-private:
-    struct [[eosio::table]] account
-    {
-        asset balance;
+        using create_action = eosio::action_wrapper<"create"_n, &BasicToken::create>;
+        using issue_action = eosio::action_wrapper<"issue"_n, &BasicToken::issue>;
+        using retire_action = eosio::action_wrapper<"retire"_n, &BasicToken::retire>;
+        using transfer_action = eosio::action_wrapper<"transfer"_n, &BasicToken::transfer>;
+        using transferfrom_action = eosio::action_wrapper<"transferfrom"_n, &BasicToken::transferfrom>;
+        using approve_action = eosio::action_wrapper<"approve"_n, &BasicToken::approve>;
+        using unapprove_action = eosio::action_wrapper<"unapprove"_n, &BasicToken::unapprove>;
+        using open_action = eosio::action_wrapper<"open"_n, &BasicToken::open>;
+        using close_action = eosio::action_wrapper<"close"_n, &BasicToken::close>;
 
-        uint64_t primary_key() const { return balance.symbol.code().raw(); }
+    private:
+        struct [[eosio::table]] account
+        {
+            asset balance;
+
+            uint64_t primary_key() const { return balance.symbol.code().raw(); }
+        };
+
+        struct [[eosio::table]] currency_stats
+        {
+            asset supply;
+            asset max_supply;
+            name issuer;
+
+            uint64_t primary_key() const { return supply.symbol.code().raw(); }
+        };
+
+        struct [[eosio::table]] allowed_struct
+        {
+            uint64_t key;
+            name spender;
+            asset quantity;
+
+            uint64_t primary_key() const { return key; }
+        };
+
+        typedef eosio::multi_index<"accounts"_n, account> accounts;
+        typedef eosio::multi_index<"stat"_n, currency_stats> stats;
+        typedef eosio::multi_index<"allowed"_n, allowed_struct> allowed;
+
+        void sub_balance(name owner, asset value);
+        void sub_balancefrom(name owner, name spender, asset value);
+        void add_balance(name owner, asset value, name ram_payer);
     };
-
-    struct [[eosio::table]] currency_stats
-    {
-        asset supply;
-        asset max_supply;
-        name issuer;
-
-        uint64_t primary_key() const { return supply.symbol.code().raw(); }
-    };
-
-    struct [[eosio::table]] allowed_struct
-    {
-        uint64_t key;
-        name spender;
-        asset quantity;
-
-        uint64_t primary_key() const { return key; }
-    };
-
-    typedef eosio::multi_index<"accounts"_n, account> accounts;
-    typedef eosio::multi_index<"stat"_n, currency_stats> stats;
-    typedef eosio::multi_index<"allowed"_n, allowed_struct> allowed;
-
-    void sub_balance(name owner, asset value);
-    void sub_balancefrom(name owner, name spender, asset value);
-    void add_balance(name owner, asset value, name ram_payer);
-};
 
 } // namespace eosio
